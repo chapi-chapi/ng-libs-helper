@@ -1,0 +1,20 @@
+{
+  "name": "ng-libs-helper",
+  "version": "0.0.1",
+  "description": "Helpers for working with angular library projects.",
+  "main": "app/index.js",
+  "bin": "app/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^5.2.0",
+    "shelljs": "^0.8.4",
+    "wait-on": "^5.0.0"
+  },
+  "peerDependencies": {
+    "rimraf": "3.0.2"
+  }
+}
