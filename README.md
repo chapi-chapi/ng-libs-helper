@@ -1,6 +1,12 @@
 # ng-libs-helper
 Scripts for working with angular library projects.
 
+You will need to install the peer dependencies globally first:
+
+```
+npm install -g rimraf wait-on
+```
+
 # Commands
 ## add
 Adds one or more library projects whilst also [running the configs command](#configs).
@@ -8,11 +14,23 @@ Adds one or more library projects whilst also [running the configs command](#con
 ![Add Screenshot](./screenshots/add.PNG)
 
 ## remove
+Removes one or more library projects whilst also [running the configs command](#configs).
+
+![Remove Screenshot](./screenshots/remove.PNG)
 
 ## build
 Builds all libaries, or the ones passed in as arguments.
 
 ![Build Screenshot](./screenshots/build.PNG)
+
+### Dependencies
+The build script does the work of scanning each build target's package.json to see if there is a reference to another project in the library, using this it generates the commands to run based on this dependency tree:
+
+![Build with dependency Screenshot](./screenshots/build_dependencies_building.PNG)
+
+It also does this when the build targets does not include the dependencies:
+
+![Build with dependency Screenshot](./screenshots/build_dependencies_will_build.PNG)
 
 ## serve
 

@@ -259,7 +259,7 @@ const getLibDependenciesToWaitOn = (libName, allLibArgs, unBuiltProjects) => {
           (x) =>
             `${x} (Currently ${
               unbuiltDependencies.indexOf(x) === -1
-                ? "Built"
+                ? (allLibArgs.indexOf(x) >= -1 ? "Building" : "Built")
                 : "Unbuilt - WILL BUILD FIRST"
             })`
         )
