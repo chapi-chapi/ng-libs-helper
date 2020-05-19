@@ -27,7 +27,6 @@ const libPrefix = getOption("libraryNamePrefix");
 const scopeName = getOption("scopeName");
 const isPublicScope = getOption("isPublicScope", true);
 const waitOnFile = getOption("libFileToWaitOnForBuild", "public-api.d.ts");
-
 //#endregion ReadInConfigOptions
 
 //#region HelperFunctions
@@ -38,7 +37,7 @@ const ensurescopeName = (libName) =>
 const ensurePrefix = (libName) =>
   `${libPrefix}${libName.replace(libPrefix, "")}`;
 
-const getProjectNames = (path = libsPath) => {
+const getProjectNames = (path = ensurescopeName(libsPath)) => {
   return fs.existsSync(path)
     ? fs
         .readdirSync(path, { withFileTypes: true })
@@ -109,7 +108,7 @@ const processLibScript = (
 /** #### _Get into the folder. Do the command. Get back in time for tea_
  * Required because some `npm` commands don't let you provide an output flag or run against a different directory */
 const performCommandInLibDistFolder = (lib, command) =>
-  `cd .\\dist\\${ensurePrefix(lib)} && ${command} && cd ../..`;
+  `cd .\\dist\\${ensurescopeName(ensurePrefix(lib))} && ${command} && cd ../..`;
 
 //#endregion HelperFunctions
 
@@ -125,31 +124,23 @@ const packAndPublish = () =>
 const add = () =>
   processLibScript(
     (lib) =>
-      `ng generate library ${ensurePrefix(
+      `ng generate library ${scopeName ? `${scopeName}/` : ''}${ensurePrefix(
         lib
-      )} && copy .npmrc .\\projects\\${ensurePrefix(
+      )} && copy .npmrc .\\projects\\${ensurescopeName(ensurePrefix(
         lib
-      )} && rimraf .\\projects\\${ensurePrefix(lib)}\\karma.conf.js`,
+      ))} && rimraf .\\projects\\${ensurescopeName(ensurePrefix(lib))}\\karma.conf.js`,
     false,
     (lib) => {
-      const libName = ensurePrefix(lib);
+      const libName = ensurescopeName(ensurePrefix(lib));
       const fs = require("fs");
       const libDir = `${libsPath}/${libName}/src/lib`;
       const fileNames = fs
         .readdirSync(`${libDir}`, { withFileTypes: true })
         .map((x) => `${libDir}/${x.name}`);
-
-      fileNames.forEach((filePath) => {
-        const file = fs.readFileSync(filePath).toString();
-        const updatedFile = file.replace(/NgK/g, "K");
-        fs.writeFileSync(filePath, updatedFile);
-      });
     }
   );
-const copyNpmrc = () =>
-  processLibScript((lib) => `copy .npmrc .\\dist\\${ensurePrefix(lib)}`);
 const remove = () =>
-  processLibScript((lib) => `rimraf ${libsPath}\\${ensurePrefix(lib)}`, false);
+  processLibScript((lib) => `rimraf ${libsPath}\\${ensurescopeName(ensurePrefix(lib))}`, false);
 
 const configs = () => {
   const libNames = getProjectNames();
