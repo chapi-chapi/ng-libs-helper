@@ -1,9 +1,11 @@
 {
-  "name": "ng-libs-helper",
-  "version": "0.0.1",
+  "name": "@chapichapi/ng-libs-helper",
+  "version": "0.0.4",
   "description": "Helpers for working with angular library projects.",
   "main": "app/index.js",
-  "bin": "app/index.js",
+  "bin": {
+    "chapichapi-ng-libs": "./app/index.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -82,7 +82,7 @@ The relative path to where the tsconfig.json configuration file is kept, by defa
 The name of the showcase application for having a frontend to test and showcase the different library projects.
 if left blank, then this is determined based on the first 'application' type project found in the angular.json file.
 
-## libPrefix
+## libraryNamePrefix
 A prefix name for the libraries, for example you may want all libraries to start with 'ng-' or 'ngx-' or something else.
 
 ## scopeName
@@ -91,5 +91,8 @@ A scopename for all packages such as @foo (e.g. @foo/bar package).
 ## isPublicScope
 Determine if packages should be public (for npm consumption) or private packages for enterprise consumption.
 
-## waitOnFile
+## libFileToWaitOnForBuild
 The file to look at to wait on to ascertain whether a library has been built. By default this is public-api.d.ts.
+
+## npmrcPath
+The path to an npmrc file to copy - if using private npm registries.

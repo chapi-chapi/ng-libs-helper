@@ -3,21 +3,26 @@ const fs = require("fs");
 /** Makes the specific lib scripts stick out from the noise of the tasks */
 const consoleColors = {
   reset: "\x1b[0m",
-  fgCyan: "\x1b[36m",
+  normal: "\x1b[36m",
+  warning: "\x1b[33m",
+  error: "\x1b[31m",
 };
-const output = (outputText) =>
-  console.log(consoleColors.fgCyan, outputText, consoleColors.reset);
+const output = (outputText, color = consoleColors.normal) =>
+  console.log(color, outputText, consoleColors.reset);
 //#region ReadInConfigOptions
 const optionsFileName = "./libs.config.json";
 let options;
 if (fs.existsSync(optionsFileName)) {
   options = JSON.parse(fs.readFileSync(optionsFileName));
 } else {
-  output(`No options file found at ${optionsFileName}. Using default values.`);
+  output(
+    consoleColors.warning,
+    `No options file found at ${optionsFileName}. Using default values.`
+  );
 }
 const getOption = (optionName, defaultValue = "") =>
   options && options[optionName] ? options[optionName] : defaultValue;
-const libsPath = getOption("projectsPath", "./projects");
+let libsPath = getOption("projectsPath", "./projects");
 const angularJsonPath = getOption("angularJsonPath", "./angular.json");
 const karmaConfigPath = getOption("karmaConfigPath", "karma.conf.js");
 const tsconfigPath = getOption("tsconfigPath", "./tsconfig.json");
@@ -27,6 +32,7 @@ const libPrefix = getOption("libraryNamePrefix");
 const scopeName = getOption("scopeName");
 const isPublicScope = getOption("isPublicScope", true);
 const waitOnFile = getOption("libFileToWaitOnForBuild", "public-api.d.ts");
+const npmrcPath = getOption("npmrcPath");
 //#endregion ReadInConfigOptions
 
 //#region HelperFunctions
@@ -37,7 +43,10 @@ const ensurescopeName = (libName) =>
 const ensurePrefix = (libName) =>
   `${libPrefix}${libName.replace(libPrefix, "")}`;
 
-const getProjectNames = (path = ensurescopeName(libsPath)) => {
+libsPath = libsPath + (scopeName ? `\\${scopeName.replace('@', '')}` : '');
+addScope = scopeName ? `${scopeName}/` : '';
+
+const getProjectNames = (path = libsPath) => {
   return fs.existsSync(path)
     ? fs
         .readdirSync(path, { withFileTypes: true })
@@ -99,16 +108,29 @@ const processLibScript = (
       "------------------------------------------------------------------------------"
     );
     const shell = require("shelljs");
-    shell.exec(command);
+    shell.exec(command, (code, stdout, stderr) => {
+      if (code !== 0) output(consoleColors.error, `Exit code: ${code}`);
+      if (stdout) output(stdout);
+      if (stderr) output(consoleColors.error, stderr);
+    });
     if (postScriptActions) postScriptActions(lib);
   }
   return libs;
 };
 
+const onlyDoIfDistExists = (lib, pathToCommandStringFunc) => {
+  const path = `.\\dist\\${ensurescopeName(ensurePrefix(lib))}`;
+  if (require("fs").existsSync(path)) return pathToCommandStringFunc(path);
+  else {
+    output(consoleColors.warning, `no path ${path} was found`);
+    return "";
+  }
+};
+
 /** #### _Get into the folder. Do the command. Get back in time for tea_
  * Required because some `npm` commands don't let you provide an output flag or run against a different directory */
 const performCommandInLibDistFolder = (lib, command) =>
-  `cd .\\dist\\${ensurescopeName(ensurePrefix(lib))} && ${command} && cd ../..`;
+  onlyDoIfDistExists(lib, (path) => `cd ${path} && ${command} && cd ../..`);
 
 //#endregion HelperFunctions
 
@@ -124,23 +146,24 @@ const packAndPublish = () =>
 const add = () =>
   processLibScript(
     (lib) =>
-      `ng generate library ${scopeName ? `${scopeName}/` : ''}${ensurePrefix(
+      `ng generate library ${addScope}${ensurePrefix(
         lib
-      )} && copy .npmrc .\\projects\\${ensurescopeName(ensurePrefix(
-        lib
-      ))} && rimraf .\\projects\\${ensurescopeName(ensurePrefix(lib))}\\karma.conf.js`,
-    false,
-    (lib) => {
-      const libName = ensurescopeName(ensurePrefix(lib));
-      const fs = require("fs");
-      const libDir = `${libsPath}/${libName}/src/lib`;
-      const fileNames = fs
-        .readdirSync(`${libDir}`, { withFileTypes: true })
-        .map((x) => `${libDir}/${x.name}`);
-    }
+      )}${
+        npmrcPath
+          ? `&& copy ${npmrcPath} .\\projects\\${ensurescopeName(
+              ensurePrefix(lib)
+            )}`
+          : ""
+      } && rimraf .\\projects\\${ensurescopeName(
+        ensurePrefix(lib)
+      )}\\karma.conf.js`,
+    false
   );
 const remove = () =>
-  processLibScript((lib) => `rimraf ${libsPath}\\${ensurescopeName(ensurePrefix(lib))}`, false);
+  processLibScript(
+    (lib) => `rimraf ${libsPath}\\${ensurePrefix(lib)}`,
+    false
+  );
 
 const configs = () => {
   const libNames = getProjectNames();
@@ -154,6 +177,7 @@ const configs = () => {
         (x) => fileJsonKey[x].projectType === "application"
       );
       output(
+        consoleColors.warning,
         `${
           showcaseProjectNames.length > 0
             ? `No showcaseProjectName set in options, setting to ${showcaseProjectNames[0]}`
@@ -166,9 +190,11 @@ const configs = () => {
     Object.keys(fileJsonKey)
       .filter((x) => x !== showcaseProjectName && x != "ng-k-styles")
       .forEach((libName) => {
-        if (!libNames.some((x) => x === libName)) {
+        const rawName = libName.replace(addScope, '');
+        if (!libNames.some((x) => x === rawName)) {
           output(
-            `${libName} was found in ${path} but not in ${libsPath} - DELETING FROM ${path}`
+            consoleColors.warning,
+            `${rawName} was found in ${path} but not in ${libsPath} - DELETING FROM ${path}`
           );
           delete fileJsonKey[libName]; // remove key as no associated project
         }
@@ -195,6 +221,7 @@ const configs = () => {
           jsonKey[libName].architect.test.options.karmaConfig;
         if (karmaConfPath !== karmaConfigPath) {
           output(
+            consoleColors.warning,
             `${libName} karmaConfig path: ${karmaConfPath}. Setting to ${karmaConfigPath}.`
           );
         }
@@ -209,17 +236,19 @@ const configs = () => {
       // Add path to tsconfig to allow for switching between local and built version (for sourcemappings)
       const libProjectsPath = `${libsPath}/${libName}/src/public-api.ts`;
 
-      libName = libName.replace(`${scopeName}/`, "");
+      libName = `${addScope}${libName}`;
       if (jsonKey[libName]) {
         const libProjPathIndex = jsonKey[libName].indexOf(libProjectsPath);
         if (libProjPathIndex <= 0) {
           if (libProjPathIndex === 0) {
             output(
+              consoleColors.warning,
               `${libProjectsPath} was found at index 0 in ${tsconfigPath} - MOVING TO END OF ARRAY`
             );
             jsonKey[libName].splice(0, 1);
           } else
             output(
+              consoleColors.warning,
               `No project path for ${libName} found in ${tsconfigPath}; ADDING.`
             );
           jsonKey[libName].push(libProjectsPath);
@@ -231,7 +260,7 @@ const configs = () => {
 
 const getLibDependenciesToWaitOn = (libName, allLibArgs, unBuiltProjects) => {
   const packageJson = JSON.parse(
-    fs.readFileSync(`${libsPath}\\${ensurescopeName(libName)}\\package.json`)
+    fs.readFileSync(`${libsPath}\\${libName}\\package.json`)
   );
   const peerDependencies = packageJson.peerDependencies;
   if (peerDependencies) {
@@ -250,7 +279,9 @@ const getLibDependenciesToWaitOn = (libName, allLibArgs, unBuiltProjects) => {
           (x) =>
             `${x} (Currently ${
               unbuiltDependencies.indexOf(x) === -1
-                ? (allLibArgs.indexOf(x) >= -1 ? "Building" : "Built")
+                ? allLibArgs.indexOf(x) >= -1
+                  ? "Building"
+                  : "Built"
                 : "Unbuilt - WILL BUILD FIRST"
             })`
         )
@@ -259,7 +290,7 @@ const getLibDependenciesToWaitOn = (libName, allLibArgs, unBuiltProjects) => {
       return `${
         unbuiltDependencies.length > 0
           ? `${unbuiltDependencies
-              .map((x) => `ng build ${x}`)
+              .map((x) => `ng build ${addScope}${x}`)
               .join(" && ")} && `
           : ""
       }wait-on ${dependencies
@@ -270,7 +301,7 @@ const getLibDependenciesToWaitOn = (libName, allLibArgs, unBuiltProjects) => {
   return "";
 };
 
-const buildAndServe = (watch = true, serve = true) => {
+const buildAndServe = (watch = true, serve = true, runConcurrently = true) => {
   const concurrently = require("concurrently");
   const libs = getLibArgs(false).map((x) => ensurePrefix(x));
   output(libs);
@@ -292,12 +323,22 @@ const buildAndServe = (watch = true, serve = true) => {
         lib,
         libs,
         unBuiltProjects
-      )}ng build ${lib} ${watch ? "--watch" : ""}`
+      )}ng build ${addScope}${lib} ${watch ? "--watch" : ""}`
   );
   if (serve) libCommands.push(waitAndServeCommand);
-  output(`${libCommands.length} commands to run concurrently:`);
+
+  output(
+    `${libCommands.length} commands to run${
+      runConcurrently ? " concurrently" : ""
+    }:`
+  );
   output(libCommands);
-  concurrently(libCommands).then(() => output("All Done :)"));
+  if (runConcurrently) {
+    concurrently(libCommands).then(() => output("All Done :)"));
+  } else {
+    const shell = require("shelljs");
+    libCommands.forEach((cmd) => shell.exec(cmd));
+  }
 };
 //#endregion CommandLogic
 
@@ -333,6 +374,7 @@ if (commandToRun) {
   commandToRun();
 } else {
   output(
+    consoleColors.warning,
     `${
       commandArg
         ? `No Command ${commandArg} was found`
