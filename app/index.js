@@ -89,7 +89,7 @@ const getLibArgs = (getAllProjectsIfNoArgs = true) => {
  */
 const processLibScript = (
   individualLibCommandFunc,
-  getAllProjectsIfNoArgs = true,
+  getAllProjectsIfNoArgs = false,
   postScriptActions
 ) => {
   const libs = getLibArgs(getAllProjectsIfNoArgs);
@@ -108,11 +108,12 @@ const processLibScript = (
       "------------------------------------------------------------------------------"
     );
     const shell = require("shelljs");
-    shell.exec(command, (code, stdout, stderr) => {
-      if (code !== 0) output(consoleColors.error, `Exit code: ${code}`);
-      if (stdout) output(stdout);
-      if (stderr) output(consoleColors.error, stderr);
-    });
+    // shell.exec(command, (code, stdout, stderr) => {
+    //   if (code !== 0) output(consoleColors.error, `Exit code: ${code}`);
+    //   if (stdout) output(stdout);
+    //   if (stderr) output(consoleColors.error, stderr);
+    // });
+    shell.exec(command);
     if (postScriptActions) postScriptActions(lib);
   }
   return libs;
@@ -352,14 +353,8 @@ module.exports = {
   pack,
   publish,
 
-  add: () => {
-    add();
-    configs();
-  },
-  remove: () => {
-    remove();
-    configs();
-  },
+  add,
+  remove,
 
   configs,
 
