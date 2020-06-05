@@ -1,4 +1,7 @@
 # ng-libs-helper
+
+[![Repo Readme](https://img.shields.io/npm/v/@chapichapi/ngx-libs-helper?color=green&logo=npm)](https://www.npmjs.com/package/@chapichapi/ngx-libs-helper)
+
 Scripts for working with angular library projects.
 
 You will need to install the peer dependencies globally first:
