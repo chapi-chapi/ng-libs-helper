@@ -2,6 +2,10 @@
   "name": "@chapichapi/ngx-libs-helper",
   "version": "0.0.4",
   "description": "Helpers for working with angular library projects.",
+  "repository": {
+    "url": "https://github.com/chapi-chapi/ng-libs-helper",
+    "type": "git"
+  },
   "main": "app/index.js",
   "bin": {
     "chapichapi-ng-libs": "./app/index.js"
@@ -9,7 +13,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Thomas Randell",
   "license": "ISC",
   "dependencies": {
     "concurrently": "^5.2.0",
