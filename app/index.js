@@ -1,5 +1,6 @@
 #! /usr/bin/env node
-const fs = require("fs");
+const fs = require("fs"),
+  path = require("path");
 /** Makes the specific lib scripts stick out from the noise of the tasks */
 const consoleColors = {
   reset: "\x1b[0m",
@@ -10,7 +11,7 @@ const consoleColors = {
 const output = (outputText, color = consoleColors.normal) =>
   console.log(color, outputText, consoleColors.reset);
 //#region ReadInConfigOptions
-const optionsFileName = "./libs.config.json";
+const optionsFileName = path.resolve("./libs.config.json");
 let options;
 if (fs.existsSync(optionsFileName)) {
   options = JSON.parse(fs.readFileSync(optionsFileName));
@@ -38,12 +39,15 @@ const npmrcPath = getOption("npmrcPath");
 //#region HelperFunctions
 const ensurescopeName = (libName) =>
   scopeName
-    ? `${scopeName.replace("@", "")}\\${libName.replace(scopeName, "")}`
+    ? path.resolve(
+        `${scopeName.replace("@", "")}\\${libName.replace(scopeName, "")}`
+      )
     : libName;
 const ensurePrefix = (libName) =>
   `${libPrefix}${libName.replace(libPrefix, "")}`;
 
-libsPath = libsPath + (scopeName ? `\\${scopeName.replace("@", "")}` : "");
+libsPath =
+  libsPath + (scopeName ? path.resolve(`\\${scopeName.replace("@", "")}`) : "");
 addScope = scopeName ? `${scopeName}/` : "";
 
 const getProjectNames = (path = libsPath) => {
@@ -61,7 +65,6 @@ const getLibArgs = (getAllProjectsIfNoArgs = true) => {
   const args = process.argv.slice(3);
   let libs = [];
   if ((getAllProjectsIfNoArgs && !args) || args.length === 0) {
-    const path = require("path");
     const projectsPath = path.resolve(libsPath);
     output(
       `No library name(s) passed in, getting all libraries from ${projectsPath}.`
@@ -90,8 +93,7 @@ const getLibArgs = (getAllProjectsIfNoArgs = true) => {
 const processLibScript = (
   individualLibCommandFunc,
   getAllProjectsIfNoArgs = false,
-  postScriptActions,
-  runWithCallback = false
+  postScriptActions
 ) => {
   const libs = getLibArgs(getAllProjectsIfNoArgs);
   output(`Running command against ${libs.length} libs:`);
@@ -99,39 +101,36 @@ const processLibScript = (
 
   for (let index = 0; index < libs.length; index++) {
     const lib = libs[index];
-    const command = individualLibCommandFunc(lib);
+    let command = individualLibCommandFunc(lib);
     output(
       "------------------------------------------------------------------------------"
     );
     output(`Processing library ${index + 1} of ${libs.length}`);
+    if (index > 0)
+      command = `wait-on ${path.resolve(
+        `${libsPath}/${libs[index - 1]}/package.json`
+      )} -d 200 && ${command}`;
     output(command);
     output(
       "------------------------------------------------------------------------------"
     );
     const shell = require("shelljs");
-    if (index > 0) {
-      // Using setTimeout as a quick workaround for now to fix (I think) ngcc not liking some multiple commands
-      // https://github.com/chapi-chapi/ng-libs-helper/issues/1
-      setTimeout(() => {
-        if (runWithCallback) {
-          shell.exec(command, (code, stdout, stderr) => {
-            if (code !== 0) output(consoleColors.error, `Exit code: ${code}`);
-            if (stdout) output(stdout);
-            if (stderr) output(consoleColors.error, stderr);
-          });
-          if (postScriptActions) postScriptActions(lib);
-        } else {
-          shell.exec(command);
-          if (postScriptActions) postScriptActions(lib);
-        }
-      }, 300);
-    }
+    shell.exec(command, (code, stdout, stderr) => {
+      if (code !== 0) output(consoleColors.error, `Exit code: ${code}`);
+      if (stdout) output(stdout);
+      if (stderr) output(consoleColors.error, stderr);
+
+      if (postScriptActions) {
+        output("Running postscript action:");
+        postScriptActions(lib);
+      }
+    });
   }
   return libs;
 };
 
 const onlyDoIfDistExists = (lib, pathToCommandStringFunc) => {
-  const path = `.\\dist\\${ensurescopeName(ensurePrefix(lib))}`;
+  const libPath = path.resolve(`./dist/${ensurescopeName(ensurePrefix(lib))}`);
   if (require("fs").existsSync(path)) return pathToCommandStringFunc(path);
   else {
     output(consoleColors.warning, `no path ${path} was found`);
@@ -142,18 +141,42 @@ const onlyDoIfDistExists = (lib, pathToCommandStringFunc) => {
 /** #### _Get into the folder. Do the command. Get back in time for tea_
  * Required because some `npm` commands don't let you provide an output flag or run against a different directory */
 const performCommandInLibDistFolder = (lib, command) =>
-  onlyDoIfDistExists(lib, (path) => `cd ${path} && ${command} && cd ../..`);
+  onlyDoIfDistExists(
+    lib,
+    (libPath) => `cd ${libPath} && ${command} && cd ${path.resolve("../..")}`
+  );
 
 //#endregion HelperFunctions
 
 //#region CommandLogic
 const pack = () =>
-  processLibScript((lib) => performCommandInLibDistFolder(lib, "npm pack"), null, null, true);
+  processLibScript(
+    (lib) => performCommandInLibDistFolder(lib, "npm pack"),
+    null,
+    null,
+    true
+  );
 const publish = () =>
-  processLibScript((lib) => performCommandInLibDistFolder(lib, `npm publish ${isPublicScope ? '--access public' : ''}`), null, null, true);
+  processLibScript(
+    (lib) =>
+      performCommandInLibDistFolder(
+        lib,
+        `npm publish ${isPublicScope ? "--access public" : ""}`
+      ),
+    null,
+    null,
+    true
+  );
 const packAndPublish = () =>
-  processLibScript((lib) =>
-    performCommandInLibDistFolder(lib, `npm pack && npm publish ${isPublicScope ? '--access public' : ''}`), null, null, true
+  processLibScript(
+    (lib) =>
+      performCommandInLibDistFolder(
+        lib,
+        `npm pack && npm publish ${isPublicScope ? "--access public" : ""}`
+      ),
+    null,
+    null,
+    true
   );
 const add = () =>
   processLibScript(
@@ -167,10 +190,15 @@ const add = () =>
       } && rimraf .\\projects\\${ensurescopeName(
         ensurePrefix(lib)
       )}\\karma.conf.js`,
-    false
+    false,
+    (lib) => configs()
   );
 const remove = () =>
-  processLibScript((lib) => `rimraf ${libsPath}\\${ensurePrefix(lib)}`, false);
+  processLibScript(
+    (lib) => `rimraf ${libsPath}\\${ensurePrefix(lib)}`,
+    false,
+    (lib) => configs()
+  );
 
 const configs = () => {
   const libNames = getProjectNames();
@@ -360,6 +388,7 @@ module.exports = {
   publish,
 
   add,
+
   remove,
 
   configs,

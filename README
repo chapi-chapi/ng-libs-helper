@@ -1,0 +1,12 @@
+# ng-libs-helper
+Scripts for working with angular library projects.
+
+You will need to install the peer dependencies globally first:
+
+```
+npm install -g rimraf wait-on
+```
+
+:warning: This is still an early prototype while I get time to work on it, there may be some issues or some things not covered yet - [please see the issues](https://github.com/chapi-chapi/ng-libs-helper/issues)
+
+[![Repo Readme](https://img.shields.io/badge/Click%20This%20Button%20-For%20Documentation!-brightgreen?style=for-the-badge&logo=github)](https://github.com/chapi-chapi/ng-libs-helper#readme)
