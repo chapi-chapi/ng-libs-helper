@@ -150,10 +150,10 @@ const performCommandInLibDistFolder = (lib, command) =>
 const pack = () =>
   processLibScript((lib) => performCommandInLibDistFolder(lib, "npm pack"), null, null, true);
 const publish = () =>
-  processLibScript((lib) => performCommandInLibDistFolder(lib, "npm publish"), null, null, true);
+  processLibScript((lib) => performCommandInLibDistFolder(lib, `npm publish ${isPublicScope ? '--access public' : ''}`), null, null, true);
 const packAndPublish = () =>
   processLibScript((lib) =>
-    performCommandInLibDistFolder(lib, "npm pack && npm publish"), null, null, true
+    performCommandInLibDistFolder(lib, `npm pack && npm publish ${isPublicScope ? '--access public' : ''}`), null, null, true
   );
 const add = () =>
   processLibScript(

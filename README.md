@@ -216,14 +216,14 @@ This ensures that the angular.json and tsconfig.json files are updated and in th
 
 You can see come more examples of this being run at the end of the [add](#add) and [remove](#remove) scripts.
 
-# Notes
+# :information_desk_person: Notes
 You may at some point get an error stating something about ngcc.lock such as this:
 
 ![Error Screenshot](./screenshots/build_error.PNG)
 
 you should be able to just re-run the command and it will work - sometimes (very infrequently in my experience) this can just happen when running multiple ngcc commands.
 
-# libs.config.json Options
+# :art: libs.config.json Options
 You can configure the scripts by adding a `libs.config.json` file to the root of your app.
 You do not have to add this, but if you don't then the default values will be used.
 Below are the options:
