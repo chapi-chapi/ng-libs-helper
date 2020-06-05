@@ -25,7 +25,7 @@ const getOption = (optionName, defaultValue = "") =>
   options && options[optionName] ? options[optionName] : defaultValue;
 let libsPath = getOption("projectsPath", "./projects");
 const angularJsonPath = getOption("angularJsonPath", "./angular.json");
-const karmaConfigPath = getOption("karmaConfigPath", "karma.conf.js");
+const karmaConfigPath = getOption("karmaConfigPath");
 const tsconfigPath = getOption("tsconfigPath", "./tsconfig.json");
 /** The name of the root app for displaying the components - used when querying the angular.json file */
 let showcaseProjectName = getOption("showcaseProjectName");
@@ -93,7 +93,8 @@ const getLibArgs = (getAllProjectsIfNoArgs = true) => {
 const processLibScript = (
   individualLibCommandFunc,
   getAllProjectsIfNoArgs = false,
-  postScriptActions
+  postScriptActions,
+  waitForPrevious = true
 ) => {
   const libs = getLibArgs(getAllProjectsIfNoArgs);
   output(`Running command against ${libs.length} libs:`);
@@ -106,7 +107,7 @@ const processLibScript = (
       "------------------------------------------------------------------------------"
     );
     output(`Processing library ${index + 1} of ${libs.length}`);
-    if (index > 0)
+    if (index > 0 && waitForPrevious)
       command = `wait-on ${path.resolve(
         `${libsPath}/${libs[index - 1]}/package.json`
       )} -d 200 && ${command}`;
@@ -150,33 +151,20 @@ const performCommandInLibDistFolder = (lib, command) =>
 
 //#region CommandLogic
 const pack = () =>
-  processLibScript(
-    (lib) => performCommandInLibDistFolder(lib, "npm pack"),
-    null,
-    null,
-    true
-  );
+  processLibScript((lib) => performCommandInLibDistFolder(lib, "npm pack"));
 const publish = () =>
-  processLibScript(
-    (lib) =>
-      performCommandInLibDistFolder(
-        lib,
-        `npm publish ${isPublicScope ? "--access public" : ""}`
-      ),
-    null,
-    null,
-    true
+  processLibScript((lib) =>
+    performCommandInLibDistFolder(
+      lib,
+      `npm publish ${isPublicScope ? "--access public" : ""}`
+    )
   );
 const packAndPublish = () =>
-  processLibScript(
-    (lib) =>
-      performCommandInLibDistFolder(
-        lib,
-        `npm pack && npm publish ${isPublicScope ? "--access public" : ""}`
-      ),
-    null,
-    null,
-    true
+  processLibScript((lib) =>
+    performCommandInLibDistFolder(
+      lib,
+      `npm pack && npm publish ${isPublicScope ? "--access public" : ""}`
+    )
   );
 const add = () =>
   processLibScript(
@@ -187,9 +175,13 @@ const add = () =>
               ensurePrefix(lib)
             )}`
           : ""
-      } && rimraf .\\projects\\${ensurescopeName(
-        ensurePrefix(lib)
-      )}\\karma.conf.js`,
+      } ${
+        karmaConfigPath
+          ? `&& rimraf .\\projects\\${ensurescopeName(
+              ensurePrefix(lib)
+            )}\\karma.conf.js`
+          : ""
+      }`,
     false,
     (lib) => configs()
   );
@@ -197,7 +189,8 @@ const remove = () =>
   processLibScript(
     (lib) => `rimraf ${libsPath}\\${ensurePrefix(lib)}`,
     false,
-    (lib) => configs()
+    (lib) => configs(),
+    false
   );
 
 const configs = () => {
@@ -248,6 +241,7 @@ const configs = () => {
     (jsonKey, libName) => {
       // Set Karma path to top-level to avoid CI issues
       if (
+        karmaConfigPath &&
         jsonKey[libName] &&
         jsonKey[libName].architect &&
         jsonKey[libName].architect.test

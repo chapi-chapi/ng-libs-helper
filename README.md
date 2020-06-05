@@ -235,7 +235,7 @@ The relative path to where the library projects are kept, by default this is ./p
 The relative path to where the angular.json file is kept, by default this is ./angular.json.
 
 ## karmaConfigPath
-The relative path to where the karma configuration file is kept, by default this is ./karma.conf.js.
+The relative path to where a karma configuration file is kept if you want to use one config rather than the individual library ones, by default this is ./karma.conf.js.
 
 ## tsconfigPath
 The relative path to where the tsconfig.json configuration file is kept, by default this is ./tsconfig.json.

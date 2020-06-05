@@ -1,6 +1,6 @@
 {
   "name": "@chapichapi/ngx-libs-helper",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Helpers for working with angular library projects.",
   "repository": {
     "url": "https://github.com/chapi-chapi/ng-libs-helper",
@@ -11,8 +11,7 @@
     "chapichapi-ng-libs": "./app/index.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "minify": "uglifyjs app/index.js --compress --mangle --warn --output ng-libs-helper.min.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "files": [
     "app/index.js",
@@ -28,7 +27,5 @@
     "rimraf": "3.0.2",
     "wait-on": "^5.0.0"
   },
-  "devDependencies": {
-    "uglify-js": "^3.9.4"
-  }
+  "devDependencies": {}
 }
