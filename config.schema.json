@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "type": "object",
+    "properties": {
+      "scopeName": {
+        "type": "string",
+        "description": "A scopename for all packages such as @foo (e.g. @foo/bar package)."
+      },
+      "libraryNamePrefix": {
+        "type": "string",
+        "description": "A prefix name for the libraries, for example you may want all libraries to start with 'ng-' or 'ngx-' or something else."
+      },
+      "isPublicScope": {
+        "type": "boolean",
+        "description": "Determine if packages should be public (for npm consumption) or private packages for enterprise consumption."
+      }
+    }
+  }

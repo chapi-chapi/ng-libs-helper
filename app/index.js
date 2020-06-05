@@ -39,24 +39,20 @@ const npmrcPath = getOption("npmrcPath");
 //#region HelperFunctions
 const ensurescopeName = (libName) =>
   scopeName
-    ? path.resolve(
-        `${scopeName.replace("@", "")}\\${libName.replace(scopeName, "")}`
-      )
+    ? `${scopeName.replace("@", "")}\\${libName.replace(scopeName, "")}`
     : libName;
 const ensurePrefix = (libName) =>
   `${libPrefix}${libName.replace(libPrefix, "")}`;
 
-libsPath =
-  libsPath + (scopeName ? path.resolve(`\\${scopeName.replace("@", "")}`) : "");
+libsPath = libsPath + (scopeName ? `\\${scopeName.replace("@", "")}` : "");
 addScope = scopeName ? `${scopeName}/` : "";
 
-const getProjectNames = (path = libsPath) => {
-  return fs.existsSync(path)
+const getProjectNames = (lPath = libsPath) => {
+  output(`Looking in ${lPath} for projects`);
+  return fs.existsSync(lPath)
     ? fs
-        .readdirSync(path, { withFileTypes: true })
-        .filter(
-          (dirent) => dirent.isDirectory() && dirent.name !== "ng-k-styles"
-        ) // Styles need to be handled differently
+        .readdirSync(lPath, { withFileTypes: true })
+        .filter((dirent) => dirent.isDirectory())
         .map((dirent) => dirent.name)
     : [];
 };
@@ -216,7 +212,7 @@ const configs = () => {
     }
 
     Object.keys(fileJsonKey)
-      .filter((x) => x !== showcaseProjectName && x != "ng-k-styles")
+      .filter((x) => x !== showcaseProjectName)
       .forEach((libName) => {
         const rawName = libName.replace(addScope, "");
         if (!libNames.some((x) => x === rawName)) {
@@ -226,6 +222,8 @@ const configs = () => {
           );
           delete fileJsonKey[libName]; // remove key as no associated project
         }
+        output("libNames:");
+        console.log(libNames);
 
         additionalActions(fileJsonKey, libName);
       });
