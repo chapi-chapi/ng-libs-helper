@@ -7,7 +7,9 @@ You will need to install the peer dependencies globally first:
 npm install -g rimraf wait-on
 ```
 
-# Hello World Tutorial
+:warning: This is still an early prototype while I get time to work on it, there may be some issues or some things not covered yet - [please see the issues](https://github.com/chapi-chapi/ng-libs-helper/issues)
+
+# :rocket: Hello World Tutorial
 Create a new angular app:
 
 ```
@@ -166,9 +168,9 @@ If you now save the file then you should see that the libraries are both rebuilt
 test2 works!
 ## Hello World!
 
----- Bish bash gravy! you're all setup to build an angular library.
+:tada: ---- Bish bash gravy! you're all setup to build an angular library.
 
-# Commands
+# :loudspeaker: Commands
 ## add
 Adds one or more library projects whilst also [running the configs command](#configs).
 

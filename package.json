@@ -1,5 +1,5 @@
 {
-  "name": "@chapichapi/ng-libs-helper",
+  "name": "@chapichapi/ngx-libs-helper",
   "version": "0.0.4",
   "description": "Helpers for working with angular library projects.",
   "main": "app/index.js",

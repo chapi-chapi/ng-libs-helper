@@ -43,8 +43,8 @@ const ensurescopeName = (libName) =>
 const ensurePrefix = (libName) =>
   `${libPrefix}${libName.replace(libPrefix, "")}`;
 
-libsPath = libsPath + (scopeName ? `\\${scopeName.replace('@', '')}` : '');
-addScope = scopeName ? `${scopeName}/` : '';
+libsPath = libsPath + (scopeName ? `\\${scopeName.replace("@", "")}` : "");
+addScope = scopeName ? `${scopeName}/` : "";
 
 const getProjectNames = (path = libsPath) => {
   return fs.existsSync(path)
@@ -90,7 +90,8 @@ const getLibArgs = (getAllProjectsIfNoArgs = true) => {
 const processLibScript = (
   individualLibCommandFunc,
   getAllProjectsIfNoArgs = false,
-  postScriptActions
+  postScriptActions,
+  runWithCallback = false
 ) => {
   const libs = getLibArgs(getAllProjectsIfNoArgs);
   output(`Running command against ${libs.length} libs:`);
@@ -108,13 +109,23 @@ const processLibScript = (
       "------------------------------------------------------------------------------"
     );
     const shell = require("shelljs");
-    // shell.exec(command, (code, stdout, stderr) => {
-    //   if (code !== 0) output(consoleColors.error, `Exit code: ${code}`);
-    //   if (stdout) output(stdout);
-    //   if (stderr) output(consoleColors.error, stderr);
-    // });
-    shell.exec(command);
-    if (postScriptActions) postScriptActions(lib);
+    if (index > 0) {
+      // Using setTimeout as a quick workaround for now to fix (I think) ngcc not liking some multiple commands
+      // https://github.com/chapi-chapi/ng-libs-helper/issues/1
+      setTimeout(() => {
+        if (runWithCallback) {
+          shell.exec(command, (code, stdout, stderr) => {
+            if (code !== 0) output(consoleColors.error, `Exit code: ${code}`);
+            if (stdout) output(stdout);
+            if (stderr) output(consoleColors.error, stderr);
+          });
+          if (postScriptActions) postScriptActions(lib);
+        } else {
+          shell.exec(command);
+          if (postScriptActions) postScriptActions(lib);
+        }
+      }, 300);
+    }
   }
   return libs;
 };
@@ -137,19 +148,17 @@ const performCommandInLibDistFolder = (lib, command) =>
 
 //#region CommandLogic
 const pack = () =>
-  processLibScript((lib) => performCommandInLibDistFolder(lib, "npm pack"));
+  processLibScript((lib) => performCommandInLibDistFolder(lib, "npm pack"), null, null, true);
 const publish = () =>
-  processLibScript((lib) => performCommandInLibDistFolder(lib, "npm publish"));
+  processLibScript((lib) => performCommandInLibDistFolder(lib, "npm publish"), null, null, true);
 const packAndPublish = () =>
   processLibScript((lib) =>
-    performCommandInLibDistFolder(lib, "npm pack && npm publish")
+    performCommandInLibDistFolder(lib, "npm pack && npm publish"), null, null, true
   );
 const add = () =>
   processLibScript(
     (lib) =>
-      `ng generate library ${addScope}${ensurePrefix(
-        lib
-      )}${
+      `ng generate library ${addScope}${ensurePrefix(lib)}${
         npmrcPath
           ? `&& copy ${npmrcPath} .\\projects\\${ensurescopeName(
               ensurePrefix(lib)
@@ -161,10 +170,7 @@ const add = () =>
     false
   );
 const remove = () =>
-  processLibScript(
-    (lib) => `rimraf ${libsPath}\\${ensurePrefix(lib)}`,
-    false
-  );
+  processLibScript((lib) => `rimraf ${libsPath}\\${ensurePrefix(lib)}`, false);
 
 const configs = () => {
   const libNames = getProjectNames();
@@ -191,7 +197,7 @@ const configs = () => {
     Object.keys(fileJsonKey)
       .filter((x) => x !== showcaseProjectName && x != "ng-k-styles")
       .forEach((libName) => {
-        const rawName = libName.replace(addScope, '');
+        const rawName = libName.replace(addScope, "");
         if (!libNames.some((x) => x === rawName)) {
           output(
             consoleColors.warning,
