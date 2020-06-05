@@ -45,7 +45,7 @@ const ensurePrefix = (libName) =>
   `${libPrefix}${libName.replace(libPrefix, "")}`;
 
 libsPath = libsPath + (scopeName ? `\\${scopeName.replace("@", "")}` : "");
-addScope = scopeName ? `${scopeName}/` : "";
+const addScope = scopeName ? `${scopeName}/` : "";
 
 const getProjectNames = (lPath = libsPath) => {
   output(`Looking in ${lPath} for projects`);
@@ -317,7 +317,7 @@ const getLibDependenciesToWaitOn = (libName, allLibArgs, unBuiltProjects) => {
       return `${
         unbuiltDependencies.length > 0
           ? `${unbuiltDependencies
-              .map((x) => `ng build ${addScope}${x}`)
+              .map((x) => `ng build ${x.replace(addScope, "")}`)
               .join(" && ")} && `
           : ""
       }wait-on ${dependencies
@@ -335,18 +335,22 @@ const buildAndServe = (watch = true, serve = true, runConcurrently = true) => {
 
   const projectNames = getProjectNames();
   const preBuiltProjects = getProjectNames(
-    "./dist" + scopeName ? `/${scopeName}` : ""
+    `./dist${addScope.replace("@", "")}`
   );
   const unBuiltProjects = projectNames.filter(
     (x) => preBuiltProjects.indexOf(x) === -1 && libs.indexOf(x) === -1
   );
   const filesToWaitOn = libs
-    .map((lib) => `dist\\${lib}\\${waitOnFile}`)
+    .map((lib) =>
+      path.normalize(`dist/${addScope.replace("@", "")}${lib}/${waitOnFile}`)
+    )
     .join(" ");
   const waitAndServeCommand = `wait-on ${filesToWaitOn} && ng serve --vendor-source-map --aot false `; // Having to set aot false for this version of angular, I believe latest version doesn't have this issue
   const libCommands = libs.map(
     (lib) =>
-      `rimraf dist\\${lib} && ${getLibDependenciesToWaitOn(
+      `${path.normalize(
+        `rimraf dist/${addScope.replace("@", "")}${lib}`
+      )} && ${getLibDependenciesToWaitOn(
         lib,
         libs,
         unBuiltProjects
