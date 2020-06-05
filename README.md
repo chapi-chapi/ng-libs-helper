@@ -258,3 +258,15 @@ The file to look at to wait on to ascertain whether a library has been built. By
 
 ## npmrcPath
 The path to an npmrc file to copy - if using private npm registries.
+
+-------------------------------------------------------------------------
+## :clipboard: Example
+
+```json
+{
+  "$schema": "./node_modules/@chapichapi/ng-libs-helper/config.schema.json",
+  "scopeName": "@chapichapi",
+  "libraryNamePrefix": "ngx-",
+  "isPublicScope": true
+}
+```
